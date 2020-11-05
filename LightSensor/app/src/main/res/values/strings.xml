@@ -4,7 +4,7 @@
 
     <string name="title_sensing">Sensing light</string>
 
-    <string name="label_value">Value:</string>
+    <string name="light_value">Value: %1$d lx</string>
 
     <string name="lights_on">Lights are ON</string>
     <string name="lights_off">Lights are OFF</string>

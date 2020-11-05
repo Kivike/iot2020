@@ -1,6 +1,5 @@
 package iot2020.slumber.lightsensor
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.hardware.Sensor
@@ -9,9 +8,14 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.util.Log
+import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import iot2020.slumber.lightsensor.bluetooth.BluetoothAlarmHandler
 
+/**
+ * Activity that tracks light sensor value, displays it, and sends updates to alarm
+ */
 class SensingActivity : Activity(), SensorEventListener {
 
     private lateinit var sensorManager: SensorManager
@@ -20,10 +24,11 @@ class SensingActivity : Activity(), SensorEventListener {
     private val LOG_TAG = "Sensing"
 
     private val LIGHTS_ON_THRESHOLD = 50
-    private var isLightsOn = true
+    private var isLightsOn: Boolean? = null
 
     private lateinit var valueText: TextView
     private lateinit var statusText: TextView
+    private lateinit var lightIcon: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,34 +39,55 @@ class SensingActivity : Activity(), SensorEventListener {
 
         valueText = findViewById(R.id.sensor_value)
         statusText = findViewById(R.id.sensor_status)
+        lightIcon = findViewById(R.id.img_light)
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // Necessary override, any reason to care about accuracy?
         Log.i(LOG_TAG, "accuracy: $accuracy")
     }
 
+    /**
+     * Called when sensor detects new value
+     */
     override fun onSensorChanged(event: SensorEvent) {
-        val lightValue = event.values[0]
+        val lightValue = event.values[0].toInt()
         val newIsLightsOn = lightValue >= LIGHTS_ON_THRESHOLD
 
-        @SuppressLint("SetTextI18n")
-        valueText.text = event.values[0].toString() + " lx"
+        valueText.text = String.format(resources.getString(R.string.light_value), lightValue)
 
         if (newIsLightsOn != isLightsOn) {
             isLightsOn = newIsLightsOn
 
-            if (isLightsOn) {
-                statusText.text = resources.getString(R.string.lights_on)
-            } else {
-                statusText.text = resources.getString(R.string.lights_off)
-            }
-            sendUpdatedValue(isLightsOn)
+            updateView(isLightsOn!!)
+            sendUpdatedValue(isLightsOn!!)
         }
     }
 
-    private fun sendUpdatedValue(value: Boolean) {
+    /**
+     * Update activity view elements based on [isLightsOn] value
+     */
+    private fun updateView(isLightsOn: Boolean) {
+        val text: String
+        val iconColor: Int
+
+        if (isLightsOn) {
+            text = resources.getString(R.string.lights_on)
+            iconColor = ContextCompat.getColor(this, R.color.lights_on)
+        } else {
+            text = resources.getString(R.string.lights_off)
+            iconColor = ContextCompat.getColor(this, R.color.lights_off)
+        }
+        statusText.text = text
+        lightIcon.setColorFilter(iconColor)
+    }
+
+    /**
+     * Send [isLightsOn] flag to alarm
+     */
+    private fun sendUpdatedValue(isLightsOn: Boolean) {
         val btHandler = BluetoothAlarmHandler()
-        val byteValue = if (value) 1.toByte() else 0.toByte()
+        val byteValue = if (isLightsOn) 1.toByte() else 0.toByte()
         btHandler.sendValue(this, byteValue)
     }
 
@@ -70,6 +96,9 @@ class SensingActivity : Activity(), SensorEventListener {
         sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
+    /**
+     * Stop sensing when activity is put on pause
+     */
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)

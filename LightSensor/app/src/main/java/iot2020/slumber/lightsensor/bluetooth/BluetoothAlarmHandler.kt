@@ -13,7 +13,7 @@ class BluetoothAlarmHandler {
 
         deviceFinder.scan { alarmDevice ->
             val btGatt = alarmDevice.connectGatt(context, false, gattCallback)
-            // TODO send data
+            // TODO send data to alarm
         }
     }
 

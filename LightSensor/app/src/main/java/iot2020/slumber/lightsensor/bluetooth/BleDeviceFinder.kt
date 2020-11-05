@@ -15,6 +15,9 @@ class BleDeviceFinder (btAdapter: BluetoothAdapter) {
 
     private lateinit var resultCallback: ((d: BluetoothDevice) -> Unit)
 
+    /**
+     * Start scanning devices, call [resultCallback] when the alarm device is found
+     */
     fun scan(resultCallback: (d: BluetoothDevice) -> Unit) {
         this.resultCallback = resultCallback
 
@@ -32,6 +35,9 @@ class BleDeviceFinder (btAdapter: BluetoothAdapter) {
     }
 
     private val scanCallback: ScanCallback = object : ScanCallback() {
+        /**
+         * Called for every BTE device found
+         */
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
             super.onScanResult(callbackType, result)
 

@@ -12,6 +12,10 @@ import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
+/**
+ * Activity is just initial screen with button to start sensor
+ * Pressing the button will check that bluetooth is enabled and asks for necessary permissions
+ */
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_CODE_ENABLE_BT = 8
@@ -25,9 +29,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initConnectButton() {
-        val btBtn = findViewById<Button>(R.id.bt_button)
+        val startSensingBtn = findViewById<Button>(R.id.btn_start_sensing)
 
-        btBtn.setOnClickListener() {
+        startSensingBtn.setOnClickListener() {
             enableBluetooth()
         }
     }
