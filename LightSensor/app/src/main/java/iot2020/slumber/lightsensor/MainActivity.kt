@@ -62,6 +62,9 @@ class MainActivity : AppCompatActivity() {
         requestPermissions()
     }
 
+    /**
+     * Request permissions needed for Bluetooth
+     */
     private fun requestPermissions() {
         val permissions = mutableListOf<String>()
         permissions.add(Manifest.permission.BLUETOOTH)
