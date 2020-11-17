@@ -1,6 +1,7 @@
 package iot2020.slumber.lightsensor
 
 import android.app.Activity
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -11,7 +12,7 @@ import android.util.Log
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import iot2020.slumber.lightsensor.bluetooth.BluetoothAlarmHandler
+import iot2020.slumber.lightsensor.bluetooth.BleServer
 
 /**
  * Activity that tracks light sensor value, displays it, and sends updates to alarm
@@ -28,7 +29,12 @@ class SensingActivity : Activity(), SensorEventListener {
 
     private lateinit var valueText: TextView
     private lateinit var statusText: TextView
+    private lateinit var devicesText: TextView
+
     private lateinit var lightIcon: ImageView
+
+    private lateinit var bleServer: BleServer
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +46,25 @@ class SensingActivity : Activity(), SensorEventListener {
         valueText = findViewById(R.id.sensor_value)
         statusText = findViewById(R.id.sensor_status)
         lightIcon = findViewById(R.id.img_light)
+        devicesText = findViewById(R.id.text_devices)
+        devicesText.text = resources.getString(R.string.client_not_connected)
+
+        bleServer = BleServer(
+                applicationContext,
+                getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager)
+
+        bleServer.onBtClientsChanged = { devices ->
+            if (devices.isEmpty()) {
+                devicesText.text = resources.getString(R.string.client_not_connected)
+            } else {
+                devicesText.text = resources.getString(R.string.client_connected)
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        bleServer.start()
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -86,9 +111,7 @@ class SensingActivity : Activity(), SensorEventListener {
      * Send [isLightsOn] flag to alarm
      */
     private fun sendUpdatedValue(isLightsOn: Boolean) {
-        val btHandler = BluetoothAlarmHandler()
-        val byteValue = if (isLightsOn) 1.toByte() else 0.toByte()
-        btHandler.sendValue(this, byteValue)
+        bleServer.notifyChange(isLightsOn)
     }
 
     override fun onResume() {
@@ -102,5 +125,10 @@ class SensingActivity : Activity(), SensorEventListener {
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        bleServer.stop()
     }
 }

@@ -8,4 +8,6 @@
 
     <string name="lights_on">Lights are ON</string>
     <string name="lights_off">Lights are OFF</string>
+    <string name="client_connected">Client connected</string>
+    <string name="client_not_connected">Client not connected</string>
 </resources>
