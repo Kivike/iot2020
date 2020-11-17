@@ -2,7 +2,10 @@ package iot2020.slumber.lightsensor
 
 import android.app.Activity
 import android.bluetooth.BluetoothManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -13,6 +16,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import iot2020.slumber.lightsensor.bluetooth.BleServer
+import iot2020.slumber.lightsensor.bluetooth.LightSensorProfile
 
 /**
  * Activity that tracks light sensor value, displays it, and sends updates to alarm
@@ -46,20 +50,14 @@ class SensingActivity : Activity(), SensorEventListener {
         valueText = findViewById(R.id.sensor_value)
         statusText = findViewById(R.id.sensor_status)
         lightIcon = findViewById(R.id.img_light)
-        devicesText = findViewById(R.id.text_devices)
-        devicesText.text = resources.getString(R.string.client_not_connected)
+
 
         bleServer = BleServer(
                 applicationContext,
                 getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager)
 
-        bleServer.onBtClientsChanged = { devices ->
-            if (devices.isEmpty()) {
-                devicesText.text = resources.getString(R.string.client_not_connected)
-            } else {
-                devicesText.text = resources.getString(R.string.client_connected)
-            }
-        }
+        val intentFilter = IntentFilter(LightSensorProfile.ACTION_SENSOR_DISABLE)
+        registerReceiver(btReceiver, intentFilter)
     }
 
     override fun onStart() {
@@ -116,7 +114,7 @@ class SensingActivity : Activity(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
+        startSensor()
     }
 
     /**
@@ -124,11 +122,30 @@ class SensingActivity : Activity(), SensorEventListener {
      */
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(this)
+        stopSensor()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         bleServer.stop()
+        unregisterReceiver(btReceiver)
+    }
+
+    private fun startSensor() {
+        sensorManager.registerListener(this, lightSensor, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    private fun stopSensor() {
+        sensorManager.unregisterListener(this)
+    }
+
+    private val btReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                LightSensorProfile.ACTION_SENSOR_DISABLE -> {
+                    finish()
+                }
+            }
+        }
     }
 }

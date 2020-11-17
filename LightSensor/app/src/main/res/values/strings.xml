@@ -8,6 +8,7 @@
 
     <string name="lights_on">Lights are ON</string>
     <string name="lights_off">Lights are OFF</string>
-    <string name="client_connected">Client connected</string>
-    <string name="client_not_connected">Client not connected</string>
+
+    <string name="status_wait_client">Waiting for client connection</string>
+    <string name="status_wait_wakeup">CLient connected, waiting for sensor enabling</string>
 </resources>
