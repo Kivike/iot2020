@@ -1,5 +1,6 @@
 package iot2020.slumber.lightsensor.bluetooth
 
+import android.app.Service
 import android.bluetooth.*
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
@@ -8,15 +9,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.IBinder
 import android.os.ParcelUuid
 import android.util.Log
 
 /**
- * Bluetooth Lower Energy (BLE) server that supports notifying clients on demand
+ * Bluetooth Lower Energy (BLE) server that can notify client about illuminance change
  *
- * No support for characteristic/description read requests
+ * @see LightSensorProfile
  */
-class BleServer(private val context: Context, private val btManager: BluetoothManager) {
+class BleServer(private val context: Context, private val btManager: BluetoothManager) : Service() {
 
     lateinit var btGattServer: BluetoothGattServer
 
@@ -43,6 +45,9 @@ class BleServer(private val context: Context, private val btManager: BluetoothMa
         context.unregisterReceiver(btReceiver)
     }
 
+    /**
+     * Notify clients about light status change
+     */
     fun notifyChange(isLightsOn: Boolean) {
         if (registeredDevices.isEmpty()) {
             return
@@ -52,9 +57,9 @@ class BleServer(private val context: Context, private val btManager: BluetoothMa
                 .getService(LightSensorProfile.SERVICE_UUID)
                 .getCharacteristic(LightSensorProfile.LIGHTS_STATUS_UUID)
 
-        val valueBytes = ByteArray(1)
-        valueBytes[0] = if (isLightsOn) LightSensorProfile.BYTE_LIGHTS_ON else LightSensorProfile.BYTE_LIGHTS_OFF
-        lightCharacteristic.value = valueBytes
+        lightCharacteristic.value =
+                if (isLightsOn) LightSensorProfile.BYTES_LIGHTS_ON
+                else LightSensorProfile.BYTES_LIGHTS_OFF
 
         for (device in registeredDevices) {
             btGattServer.notifyCharacteristicChanged(device, lightCharacteristic, false)
@@ -97,24 +102,76 @@ class BleServer(private val context: Context, private val btManager: BluetoothMa
     }
 
     private val advertiseCallback = object : AdvertiseCallback() {
-
+        override fun onStartFailure(errorCode: Int) {
+            Log.e(LOG_TAG, "BLE advertise failed")
+        }
     }
 
     /**
      * Handle device registration
+     *
+     * Forces single client mode
      */
     private val gattServerCallback = object : BluetoothGattServerCallback() {
         override fun onConnectionStateChange(device: BluetoothDevice, status: Int, newState: Int) {
             Log.i(LOG_TAG, "Connection state change")
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.i(LOG_TAG, "Client connected")
-                registeredDevices.add(device)
-                onBtClientsChanged(registeredDevices.toTypedArray())
+                if (registeredDevices.isEmpty()) {
+                    // Only single client allowed
+                    Log.i(LOG_TAG, "Client connected")
+
+                    registeredDevices.add(device)
+                    broadcastUpdate(LightSensorProfile.ACTION_CLIENT_CONNECTED)
+                }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 Log.i(LOG_TAG, "Client disconnected")
                 registeredDevices.remove(device)
-                onBtClientsChanged(registeredDevices.toTypedArray())
+
+                if (registeredDevices.isEmpty()) {
+                    broadcastUpdate(LightSensorProfile.ACTION_CLIENT_DISCONNECTED)
+                }
+            }
+        }
+
+        /**
+         * Handle enabling/disabling of the light sensor
+         */
+        override fun onDescriptorWriteRequest(
+                device: BluetoothDevice,
+                requestId: Int,
+                descriptor: BluetoothGattDescriptor,
+                preparedWrite: Boolean,
+                responseNeeded: Boolean,
+                offset: Int,
+                value: ByteArray?
+        ) {
+            if (LightSensorProfile.SENSOR_ENABLE == descriptor.uuid) {
+                when (value) {
+                    LightSensorProfile.BYTES_SENSOR_ENABLE -> {
+                        broadcastUpdate(LightSensorProfile.ACTION_SENSOR_ENABLE)
+                    }
+                    LightSensorProfile.BYTES_SENSOR_DISABLE -> {
+                        broadcastUpdate(LightSensorProfile.ACTION_SENSOR_DISABLE)
+                    }
+                }
+                if (responseNeeded) {
+                    btGattServer.sendResponse(
+                            device,
+                            requestId,
+                            BluetoothGatt.GATT_SUCCESS,
+                            0,
+                            null
+                    )
+                }
+            } else {
+                btGattServer.sendResponse(
+                        device,
+                        requestId,
+                        BluetoothGatt.GATT_FAILURE,
+                        0,
+                        null
+                )
             }
         }
     }
@@ -135,5 +192,15 @@ class BleServer(private val context: Context, private val btManager: BluetoothMa
                 }
             }
         }
+    }
+
+    private fun broadcastUpdate(action: String) {
+        val intent = Intent(action)
+        sendBroadcast(intent)
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        //Mandatory implementation
+        return null
     }
 }
