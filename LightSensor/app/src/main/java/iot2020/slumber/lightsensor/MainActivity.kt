@@ -3,47 +3,27 @@ package iot2020.slumber.lightsensor
 import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import iot2020.slumber.lightsensor.bluetooth.LightSensorProfile
 
 /**
- * Activity is just initial screen with button to start sensor
- * Pressing the button will check that bluetooth is enabled and asks for necessary permissions
+ * Activity checks that bluetooth is enabled and asks for necessary permissions
  */
 class MainActivity : AppCompatActivity() {
 
     private val REQUEST_CODE_ENABLE_BT = 8
     private val PERMISSION_CODE = 100
 
-    private lateinit var statusText: TextView
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        statusText = findViewById(R.id.text_status)
-
-        initConnectButton()
         enableBluetooth()
-    }
-
-    private fun initConnectButton() {
-        val startSensingBtn = findViewById<Button>(R.id.btn_start_sensing)
-
-        startSensingBtn.setOnClickListener() {
-            startSensing()
-        }
     }
 
     private fun enableBluetooth() {
@@ -92,6 +72,8 @@ class MainActivity : AppCompatActivity() {
         }
         if (!hasAllPermissions) {
             ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSION_CODE)
+        } else {
+            nextActivity()
         }
     }
 
@@ -107,46 +89,14 @@ class MainActivity : AppCompatActivity() {
                         "Need permissions!",
                         Toast.LENGTH_SHORT
                 ).show()
-            } else {
-                startSensing()
+                finish()
             }
+            nextActivity()
         }
     }
 
-    private fun startSensing() {
-        val sensingIntent = Intent(applicationContext, SensingActivity::class.java)
-        startActivity(sensingIntent)
-    }
-
-    private val btReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                LightSensorProfile.ACTION_CLIENT_CONNECTED -> {
-                    statusText.text = resources.getString(R.string.status_wait_wakeup)
-                }
-                LightSensorProfile.ACTION_CLIENT_DISCONNECTED -> {
-                    statusText.text = resources.getString(R.string.status_wait_client)
-                }
-                LightSensorProfile.ACTION_SENSOR_ENABLE -> {
-                    startSensing()
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(LightSensorProfile.ACTION_CLIENT_CONNECTED)
-        intentFilter.addAction(LightSensorProfile.ACTION_CLIENT_DISCONNECTED)
-        intentFilter.addAction(LightSensorProfile.ACTION_SENSOR_ENABLE)
-        registerReceiver(btReceiver, intentFilter)
-
-    }
-
-    override fun onPause() {
-        super.onPause()
-        unregisterReceiver(btReceiver)
+    private fun nextActivity() {
+        val intent = Intent(applicationContext, ConnectionActivity::class.java)
+        startActivity(intent)
     }
 }

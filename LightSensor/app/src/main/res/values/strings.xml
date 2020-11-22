@@ -10,5 +10,5 @@
     <string name="lights_off">Lights are OFF</string>
 
     <string name="status_wait_client">Waiting for client connection</string>
-    <string name="status_wait_wakeup">CLient connected, waiting for sensor enabling</string>
+    <string name="status_wait_wakeup">Client connected, waiting for sensor enabling</string>
 </resources>

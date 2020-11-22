@@ -1,17 +1,15 @@
 package iot2020.slumber.lightsensor
 
 import android.app.Activity
-import android.bluetooth.BluetoothManager
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.content.*
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
+import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -49,10 +47,13 @@ class SensingActivity : Activity(), SensorEventListener {
     private lateinit var lightIcon: ImageView
 
     private lateinit var bleServer: BleServer
+    private var bleServiceBound = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sensing)
+
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT)
@@ -61,18 +62,25 @@ class SensingActivity : Activity(), SensorEventListener {
         statusText = findViewById(R.id.sensor_status)
         lightIcon = findViewById(R.id.img_light)
 
-
-        bleServer = BleServer(
-                applicationContext,
-                getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager)
+        Intent(this, BleServer::class.java).also { intent ->
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
 
         val intentFilter = IntentFilter(LightSensorProfile.ACTION_SENSOR_DISABLE)
         registerReceiver(btReceiver, intentFilter)
     }
 
-    override fun onStart() {
-        super.onStart()
-        bleServer.start()
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder) {
+            Log.i(LOG_TAG, "BLE service connected")
+            val binder = service as BleServer.LocalBinder
+            bleServer = binder.getService()
+            bleServiceBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            bleServiceBound = false
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
@@ -138,7 +146,9 @@ class SensingActivity : Activity(), SensorEventListener {
      * Send [isLightsOn] flag to alarm
      */
     private fun sendUpdatedValue(isLightsOn: Boolean) {
-        bleServer.notifyChange(isLightsOn)
+        if (bleServiceBound) {
+            bleServer.notifyChange(isLightsOn)
+        }
     }
 
     override fun onResume() {
@@ -156,8 +166,8 @@ class SensingActivity : Activity(), SensorEventListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        bleServer.stop()
         unregisterReceiver(btReceiver)
+        unbindService(serviceConnection)
     }
 
     private fun startSensor() {
