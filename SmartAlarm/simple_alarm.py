@@ -1,7 +1,7 @@
 import datetime
 import time
 import os
-import winsound
+#import winsound
 from iotclient import BleClient
 import asyncio
 import sys
@@ -16,6 +16,7 @@ class Timer():
         self.current_time = time.time()
     
     def get_time(self):
+        time = 0
         time = time.time() - current_time
         return time
         
@@ -33,7 +34,7 @@ def main():
             print("Wake up")
             client = BleClient(test_callback) 
             loop = asyncio.get_event_loop()
-            winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
+ #           winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
             try:
                 loop.run_until_complete(client.run(loop))
             except KeyboardInterrupt:
@@ -44,12 +45,12 @@ def main():
 def test_callback(value): 
     if (value):
         print("Lighs turned on")
-        winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
+  #      winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
         timer = Timer()
         while(True):
-            if(!value):
+            if(not value):
                 timer = 0
-                winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+   #             winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
             if(timer.get_time() >= 60):
                 break
             timer += 1
@@ -58,7 +59,7 @@ def test_callback(value):
         
     else:
         print("Lights turned off")
-        winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+    #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
         # Start alarm again
         
 if __name__ == "__main__":
