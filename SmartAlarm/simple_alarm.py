@@ -47,7 +47,7 @@ def test_callback(value):
         winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
         timer = Timer()
         while(True):
-            if(!value):
+            if(not value):
                 timer = 0
                 winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
             if(timer.get_time() >= 60):
