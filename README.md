@@ -3,7 +3,7 @@
 ### Python requirements
 Python version 3.7
 
-#### Dependencies
+#### Installation
 ```
-pip install bleak
+pip install -r SmartAlarm/requirements.py
 ```
