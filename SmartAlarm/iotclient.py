@@ -22,6 +22,7 @@ class BleClient():
         self.callback = callback
         self.client = None
         self.running = False
+        self.notify_started = False
 
     def notification_handler(self, handle, data):
         """Simple notification handler which prints the data received."""
@@ -44,7 +45,7 @@ class BleClient():
 
         print("Using device %s" % device.address)
 
-        self.client = BleakClient(device, loop=loop, address_type="random")
+        self.client = BleakClient(device.address, loop=loop)
         print("Client created, connecting")
 
         connected = await self.client.connect()
@@ -55,6 +56,7 @@ class BleClient():
 
         await self.client.start_notify(self.LIGHTS_STATUS_UUID, self.notification_handler)
         print("Notify started")
+        self.notify_started=True
 
         while self.running and await self.client.is_connected():
             # Keep connected until stop-function is called
@@ -74,8 +76,9 @@ class BleClient():
 
     async def stop(self):
         if (self.client is not None and await self.client.is_connected()):
-            await self.client.stop_notify(self.LIGHTS_STATUS_UUID)
-            print("Notify stopped")
+            if (self.notify_started):
+                await self.client.stop_notify(self.LIGHTS_STATUS_UUID)
+                print("Notify stopped")
 
             await self.client.disconnect()
             print("BLE disconnected")
