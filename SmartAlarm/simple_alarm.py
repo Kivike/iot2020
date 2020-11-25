@@ -8,24 +8,27 @@ import sys
 from bleak import BleakScanner
 from bleak import BleakClient
 
+
+async def 
+
 class Timer():
     def __init__(self):
-        self.current_time = time.time()
+        self.start_time_of_timer = time.time()
         
     def reset_time(self):
-        self.current_time = time.time()
+        self.start_time_of_timer = time.time()
     
     def get_time(self):
-        time = 0
-        time = time.time() - current_time
-        return time
+        return_this_variable = 0.0
+        return_this_variable = time.time() - self.start_time_of_timer
+        return return_this_variable
         
 
 def main():
     wake_up_time = input("When do you want to wake up? HH:MM:SS ")
     wake_up_time = wake_up_time.split(":")
-
-    while(True):
+    i = 0
+    while(i == 0):
         time.sleep(3)
         current_time = datetime.datetime.now()
         now = current_time.strftime("%H:%M:%S")
@@ -34,6 +37,8 @@ def main():
             print("Wake up")
             client = BleClient(test_callback) 
             loop = asyncio.get_event_loop()
+            i = 1
+
  #           winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
             try:
                 loop.run_until_complete(client.run(loop))
@@ -42,22 +47,17 @@ def main():
                 loop.run_until_complete(client.stop())
     print("Good morning")
 
-def test_callback(value): 
+def test_callback(value):
+    this_is_used_to_break_the_loop = Timer()
     if (value):
         print("Lighs turned on")
   #      winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
-        timer = Timer()
-        while(True):
-            if(not value):
-                timer = 0
-   #             winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
-            if(timer.get_time() >= 60):
-                break
-            timer += 1
-            time.sleep(1)
+        print(this_is_used_to_break_the_loop.get_time())
+        if(this_is_used_to_break_the_loop.get_time() >= 10):
+            print("Leave callback")
+        time.sleep(1)
         # Wait 60 sec before turning off sensor
-        
-    else:
+    if(not value):        
         print("Lights turned off")
     #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
         # Start alarm again
