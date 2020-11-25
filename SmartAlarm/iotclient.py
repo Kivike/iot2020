@@ -40,16 +40,15 @@ class BleClient():
         Connect to BLE server and start receiving notifications
         '''
         self.running = True
-        address = await self.select_server_mac()
+        device = await self.select_server_device()
 
-        print("Using address %s" % address)
-        
-        self.client = BleakClient(address, loop=loop)
+        print("Using device %s" % device.address)
+
+        self.client = BleakClient(device, loop=loop, address_type="random")
         print("Client created, connecting")
 
-        await self.client.connect(timeout=15.0)
+        connected = await self.client.connect()
 
-        connected = await self.client.is_connected()
         print("Connection status: ", connected)
 
         self.light_status_handle = await self.get_light_status_handle()
@@ -74,32 +73,33 @@ class BleClient():
                     return char.handle
 
     async def stop(self):
-        if (self.client is None):
-            raise("Client not started")
+        if (self.client is not None and await self.client.is_connected()):
+            await self.client.stop_notify(self.LIGHTS_STATUS_UUID)
+            print("Notify stopped")
 
-        await self.client.stop_notify(self.LIGHTS_STATUS_UUID)
-        print("Notify stopped")
+            await self.client.disconnect()
+            print("BLE disconnected")
 
-        await self.client.disconnect()
-        print("BLE disconnected")
         self.running = False
 
-    async def select_server_mac(self):
+    async def select_server_device(self):
         '''
         Select MAC address for BLE server
         '''
-        if (len(sys.argv) > 1):
-            # Note that BLE server MAC address changes even when connecting to same device
-            address = sys.argv[1]
-        else:
-            devices = await BleakScanner.discover()
-            i = 1
-            for d in devices:
-                print("({0}):  {1}\n".format(i, d))
-                i = i + 1
-            selection = int(input("Which device do you want to use? "))
-            address = devices[selection - 1].address
-        return address
+        devices = await BleakScanner.discover()
+        i = 1
+        for d in devices:
+            print("({0}):  {1}\n".format(i, d))
+            i = i + 1
+
+        for d in devices:
+            uuids = d.metadata['uuids']
+
+            if self.SERVICE_UUID in uuids:
+                return d
+
+        selection = int(input("Which device do you want to use? "))
+        return devices[selection - 1]
 
 def main():
     # Move to alarm code
@@ -108,13 +108,12 @@ def main():
 
     try:
         loop.run_until_complete(client.run(loop))
-    except KeyboardInterrupt:
-        # Handle Ctrl+C
+    finally:
         loop.run_until_complete(client.stop())
 
 def test_callback(value): # Implement in alarm code
     if (value):
-        print("Lighs turned on")
+        print("Lights turned on")
         # Wait 60 sec before turning off sensor
     else:
         print("Lights turned off")
