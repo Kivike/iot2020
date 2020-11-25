@@ -79,6 +79,7 @@ class BleClient():
             if (self.notify_started):
                 await self.client.stop_notify(self.LIGHTS_STATUS_UUID)
                 print("Notify stopped")
+                self.notify_started = False
 
             await self.client.disconnect()
             print("BLE disconnected")
