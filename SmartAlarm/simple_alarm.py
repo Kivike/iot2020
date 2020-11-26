@@ -12,32 +12,33 @@ from bleak import BleakClient
 class Timer():
     def __init__(self):
 
-        client = BleClient(self.test_callback)
+        self.client = BleClient(self.test_callback)
         loop = asyncio.get_event_loop()
             
  #      winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
         try:
-            self.task1 = loop.create_task(self.start_timer())
-            loop.run_until_complete(client.run(loop))
+            self.task1 = loop.create_task(self.start_timer())           #Does this need while loop
+            loop.run_until_complete(self.client.run(loop))
         finally:
-            loop.run_until_complete(client.stop())
+            loop.run_until_complete(self.client.stop())
             
     def stop_task(self):
         self.task1.cancel()
      
     async def start_timer(self):
-        await asyncio.sleep(60)
-        client.stop()
+        await asyncio.sleep(30)
+        print("Stopping client")
+        await self.client.stop()
         
-    def test_callback(self, value):
+    async def test_callback(self, value):
         if(value):
-            print("Lights are on")
-            start_timer()
+            print("Lights are on")  #Start task here or start in the init
+            
             
             # Wait 60 sec before turning off sensor
         if(not value):     
-            print("Lights are off")
-            task1.cancel()
+            print("Lights are off") #Cancel task here
+            self.task1.cancel()
         #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
             # Start alarm again 
 
@@ -54,7 +55,7 @@ def main():
         now = now.split(":")
         if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):    #Alarm loop
             print("Wake up")
-            timeri = Timer()
+            Timer()
             i = 1
             
             
