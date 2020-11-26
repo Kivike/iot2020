@@ -8,8 +8,10 @@ import sys
 from bleak import BleakScanner
 from bleak import BleakClient
 
-
-async def 
+async def wake_up_timer(client):
+    await asyncio.sleep(60)
+    client.stop()
+                                
 
 class Timer():
     def __init__(self):
@@ -37,28 +39,24 @@ def main():
             print("Wake up")
             client = BleClient(test_callback) 
             loop = asyncio.get_event_loop()
-            i = 1
-
+            
+            task1 = loop.create_task(wake_up_timer(client))
  #           winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
             try:
                 loop.run_until_complete(client.run(loop))
+                i = 1
             except KeyboardInterrupt:
                 # Handle Ctrl+C
                 loop.run_until_complete(client.stop())
     print("Good morning")
 
 def test_callback(value):
-    this_is_used_to_break_the_loop = Timer()
-    if (value):
-        print("Lighs turned on")
-  #      winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
-        print(this_is_used_to_break_the_loop.get_time())
-        if(this_is_used_to_break_the_loop.get_time() >= 10):
-            print("Leave callback")
-        time.sleep(1)
+    if(value):
+        print("Lights are on")
         # Wait 60 sec before turning off sensor
-    if(not value):        
-        print("Lights turned off")
+    if(not value):     
+        print("Lights are off")
+        task1.cancel()
     #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
         # Start alarm again
         
