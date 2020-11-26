@@ -7,23 +7,41 @@ import asyncio
 import sys
 from bleak import BleakScanner
 from bleak import BleakClient
-
-async def wake_up_timer(client):
-    await asyncio.sleep(60)
-    client.stop()
                                 
 
 class Timer():
     def __init__(self):
-        self.start_time_of_timer = time.time()
+
+        client = BleClient(self.test_callback)
+        loop = asyncio.get_event_loop()
+            
+ #      winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
+        try:
+            self.task1 = loop.create_task(self.start_timer())
+            loop.run_until_complete(client.run(loop))
+        except KeyboardInterrupt:
+            # Handle Ctrl+C
+            loop.run_until_complete(client.stop())
+            
+    def stop_task(self):
+        self.task1.cancel()
+     
+    async def start_timer(self):
+        await asyncio.sleep(60)
+        client.stop()
         
-    def reset_time(self):
-        self.start_time_of_timer = time.time()
-    
-    def get_time(self):
-        return_this_variable = 0.0
-        return_this_variable = time.time() - self.start_time_of_timer
-        return return_this_variable
+    def test_callback(self, value):
+        if(value):
+            print("Lights are on")
+            start_timer()
+            
+            # Wait 60 sec before turning off sensor
+        if(not value):     
+            print("Lights are off")
+            task1.cancel()
+        #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+            # Start alarm again 
+
         
 
 def main():
@@ -37,28 +55,13 @@ def main():
         now = now.split(":")
         if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):    #Alarm loop
             print("Wake up")
-            client = BleClient(test_callback) 
-            loop = asyncio.get_event_loop()
+            timeri = Timer()
+            i = 1
             
-            task1 = loop.create_task(wake_up_timer(client))
- #           winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
-            try:
-                loop.run_until_complete(client.run(loop))
-                i = 1
-            except KeyboardInterrupt:
-                # Handle Ctrl+C
-                loop.run_until_complete(client.stop())
+            
     print("Good morning")
 
-def test_callback(value):
-    if(value):
-        print("Lights are on")
-        # Wait 60 sec before turning off sensor
-    if(not value):     
-        print("Lights are off")
-        task1.cancel()
-    #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
-        # Start alarm again
+
         
 if __name__ == "__main__":
     main()
