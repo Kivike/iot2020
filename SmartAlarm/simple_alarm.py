@@ -37,7 +37,7 @@ def main():
         now = now.split(":")
         if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):    #Alarm loop
             print("Wake up")
-            client = BleClient(test_callback) 
+            client = BleClient(test_callback)
             loop = asyncio.get_event_loop()
             
             task1 = loop.create_task(wake_up_timer(client))
@@ -45,8 +45,7 @@ def main():
             try:
                 loop.run_until_complete(client.run(loop))
                 i = 1
-            except KeyboardInterrupt:
-                # Handle Ctrl+C
+            except finally:
                 loop.run_until_complete(client.stop())
     print("Good morning")
 
