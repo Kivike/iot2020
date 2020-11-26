@@ -19,7 +19,7 @@ class Timer():
         try:
             self.task1 = loop.create_task(self.start_timer())
             loop.run_until_complete(client.run(loop))
-        except finally:
+        finally:
             loop.run_until_complete(client.stop())
             
     def stop_task(self):
