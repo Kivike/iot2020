@@ -13,15 +13,10 @@ class Timer():
     def __init__(self):
 
         self.client = BleClient(self.sensor_callback)
-        loop = asyncio.get_event_loop()
+        self.loop = asyncio.get_event_loop()
             
  #      winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
-        try:
-            self.task1 = loop.create_task(self.start_timer())           #Does this need while loop
-            loop.run_until_complete(self.client.run(loop))
-        finally:
-            loop.run_until_complete(self.client.stop())
-            
+
     def stop_task(self):
         self.task1.cancel()
      
@@ -30,10 +25,18 @@ class Timer():
         print("Stopping client")
         await self.client.stop()
         
+
+    def start_loop(self):
+        try:
+            #self.task1 = self.loop.create_task(self.start_timer())           #Does this need while loop
+            self.loop.run_until_complete(self.client.run(self.loop))
+        finally:
+            self.loop.run_until_complete(self.client.stop())
+            
     def sensor_callback(self, value):
         if(value):
             print("Lights are on")  #Start task here or start in the init
-            
+            self.task1 = self.loop.create_task(self.start_timer())
             
             # Wait 60 sec before turning off sensor
         if(not value):     
@@ -55,7 +58,8 @@ def main():
         now = now.split(":")
         if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):    #Alarm loop
             print("Wake up")
-            Timer()
+            timer = Timer()
+            timer.start_loop()
             i = 1
             
             
