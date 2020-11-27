@@ -12,7 +12,7 @@ from bleak import BleakClient
 class Timer():
     def __init__(self):
 
-        self.client = BleClient(self.test_callback)
+        self.client = BleClient(self.sensor_callback)
         loop = asyncio.get_event_loop()
             
  #      winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
@@ -30,7 +30,7 @@ class Timer():
         print("Stopping client")
         await self.client.stop()
         
-    async def test_callback(self, value):
+    def sensor_callback(self, value):
         if(value):
             print("Lights are on")  #Start task here or start in the init
             
