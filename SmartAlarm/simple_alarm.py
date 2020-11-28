@@ -1,7 +1,11 @@
 import datetime
 import time
 import os
-#import winsound
+
+if (os.name == "nt"):
+    is_windows = True
+    import winsound
+
 from iotclient import BleClient
 import asyncio
 import sys
@@ -15,7 +19,8 @@ class Timer():
         self.client = BleClient(self.sensor_callback)
         self.loop = asyncio.get_event_loop()
             
- #      winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
+        if (is_windows):
+            winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)  #Alarm sound, this should play until if(test_callback()) return True
 
     def stop_task(self):
         self.task1.cancel()
@@ -42,7 +47,9 @@ class Timer():
         if(not value):     
             print("Lights are off") #Cancel task here
             self.task1.cancel()
-        #    winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+            
+            if (is_windows):
+                winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
             # Start alarm again 
 
         
