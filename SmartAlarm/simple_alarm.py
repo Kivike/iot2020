@@ -32,9 +32,15 @@ class Timer():
     def play_sound(self):
         #Alarm sound, this should play until callback return True
         if (is_windows):
-            winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+            winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC | winsound.SND_LOOP)
         else:
             print("PLAY SOUND")
+
+    def stop_sound(self):
+        if (is_windows):
+            winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
+        else:
+            print("STOP SOUND")
 
     async def start_loop(self):
         try:
@@ -52,14 +58,14 @@ class Timer():
         if(value):
             print("Lights are on")  #Start task here or start in the init
             self.task1 = self.loop.create_task(self.start_timer())
-            
+            winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)      
             # Wait 60 sec before turning off sensor
         if(not value):     
             print("Lights are off") #Cancel task here
             self.task1.cancel()
             
             if (is_windows):
-                winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC)
+                winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC | winsound.SND_LOOP)
             # Start alarm again 
 
 def main():
