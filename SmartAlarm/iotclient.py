@@ -58,10 +58,6 @@ class BleClient():
         print("Notify started")
         self.notify_started=True
 
-        while self.running and await self.client.is_connected():
-            # Keep connected until stop-function is called
-            await asyncio.sleep(1)
-
     async def get_light_status_handle(self):
         '''
         Get light status handle which is the only ID available in notification_handler
