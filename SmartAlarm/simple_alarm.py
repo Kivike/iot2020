@@ -1,21 +1,18 @@
 import datetime
 import time
 import os
-
+import asyncio
+import sys
 if (os.name == "nt"):
     is_windows = True
     import winsound
-
 from iotclient import BleClient
-import asyncio
-import sys
-from bleak import BleakScanner
-from bleak import BleakClient
-                                
+
+# How long to listen for lights off -signal after receiving lights on -signal
+FLICK_WAIT_TIME = 30
 
 class Timer():
     def __init__(self):
-
         self.client = BleClient(self.sensor_callback)
         self.loop = asyncio.get_event_loop()
         self.active = False
@@ -24,7 +21,7 @@ class Timer():
         self.task1.cancel()
      
     async def start_timer(self):
-        await asyncio.sleep(30)
+        await asyncio.sleep(FLICK_WAIT_TIME)
         print("Stopping client")
         await self.client.stop()
         self.active = False
@@ -38,51 +35,50 @@ class Timer():
 
     def stop_sound(self):
         if (is_windows):
-            winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)
+            winsound.PlaySound(None,  winsound.SND_PURGE)
         else:
             print("STOP SOUND")
 
     async def start_loop(self):
         try:
-            #self.task1 = self.loop.create_task(self.start_timer())           #Does this need while loop
             await self.client.run(self.loop)
             self.play_sound()
             self.active = True
 
-            while(self.active):
+            while (self.active):
                 await asyncio.sleep(1)
         finally:
             await self.client.stop()
             
     def sensor_callback(self, value):
-        if(value):
-            print("Lights are on")  #Start task here or start in the init
+        if (value):
+            # Stop alarm
+            print("Lights are on")
             self.task1 = self.loop.create_task(self.start_timer())
-            winsound.PlaySound("soundalarm.wav",  winsound.SND_PURGE)      
-            # Wait 60 sec before turning off sensor
-        if(not value):     
+            self.stop_sound()
+        if (not value):    
+            # Start alarm again 
             print("Lights are off") #Cancel task here
             self.task1.cancel()
             
             if (is_windows):
-                winsound.PlaySound("soundalarm.wav",  winsound.SND_ASYNC | winsound.SND_LOOP)
-            # Start alarm again 
+                self.play_sound()
 
 def main():
     wake_up_time = input("When do you want to wake up? HH:MM:SS ")
     wake_up_time = wake_up_time.split(":")
-    i = 0
-    while(i == 0):
+
+    while (True): #Alarm loop
         time.sleep(3)
         current_time = datetime.datetime.now()
         now = current_time.strftime("%H:%M:%S")
         now = now.split(":")
-        if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):    #Alarm loop
+        if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):
             print("Wake up")
             timer = Timer()
             loop = asyncio.get_event_loop()
             loop.run_until_complete(timer.start_loop())
-            i = 1
+            break
             
     print("Good morning")
 
