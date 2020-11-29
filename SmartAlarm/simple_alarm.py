@@ -42,6 +42,10 @@ class Timer():
     async def connect_sensor(self):
         await self.client.connect(self.loop)
 
+    async def disconnect_sensor(self):
+        await self.client.stop()
+        print("Disconnected sensor")
+
     async def start_loop(self):
         try:
             await self.client.run(self.loop)
@@ -51,7 +55,7 @@ class Timer():
             while (self.active):
                 await asyncio.sleep(1)
         finally:
-            await self.client.stop()
+            await self.disconnect_sensor()
             
     def sensor_callback(self, value):
         if (value):
@@ -90,22 +94,27 @@ def main():
     loop = asyncio.get_event_loop()
     bt_connected = False
 
-    while (True): #Alarm loop
-        current_time = datetime.datetime.now()
-        sec_to_wake_up = (wake_up_dt - current_time).total_seconds()
+    try:
+        while (True): #Alarm loop
+            current_time = datetime.datetime.now()
+            sec_to_wake_up = (wake_up_dt - current_time).total_seconds()
 
-        if (not bt_connected and sec_to_wake_up < 15):
-            print("Connecting to sensor..")
-            loop.run_until_complete(timer.connect_sensor())
-            print("Connected")
-            bt_connected = True
+            if (not bt_connected and sec_to_wake_up < 15):
+                # Pre-connect to sensor before wakeup
+                # Connecting takes ~8 seconds
+                print("Connecting to sensor...")
+                loop.run_until_complete(timer.connect_sensor())
+                print("Connected")
+                bt_connected = True
 
-        if (sec_to_wake_up <= 0):
-            print("Wake up")
-            loop.run_until_complete(timer.start_loop())
-            break
+            if (sec_to_wake_up <= 0):
+                print("Wake up")
+                loop.run_until_complete(timer.start_loop())
+                break
 
-        time.sleep(1)
+            time.sleep(1)
+    finally:
+        loop.run_until_complete(timer.disconnect_sensor())
             
     print("Good morning")
 

@@ -43,7 +43,6 @@ class BleClient():
         self.client = BleakClient(device.address, loop=loop)
 
         connected = await self.client.connect()
-        print("Connection status: ", connected)
 
         self.light_status_handle = await self.get_light_status_handle()
 
@@ -64,7 +63,6 @@ class BleClient():
         Get light status handle which is the only ID available in notification_handler
         '''
         svcs = await self.client.get_services()
-        print("Services:", svcs)
 
         for service in svcs:
             for char in service.characteristics:
@@ -79,7 +77,6 @@ class BleClient():
                 self.notify_started = False
 
             await self.client.disconnect()
-            print("BLE disconnected")
 
         self.running = False
 
