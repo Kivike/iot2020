@@ -39,6 +39,9 @@ class Timer():
         else:
             print("STOP SOUND")
 
+    async def connect_sensor(self):
+        await self.client.connect(self.loop)
+
     async def start_loop(self):
         try:
             await self.client.run(self.loop)
@@ -53,7 +56,7 @@ class Timer():
     def sensor_callback(self, value):
         if (value):
             # Stop alarm
-            print("Lights are on")
+            print("Lights are on, waiting for %i seconds" % FLICK_WAIT_TIME)
             self.task1 = self.loop.create_task(self.start_timer())
             self.stop_sound()
         if (not value):    
@@ -65,20 +68,44 @@ class Timer():
                 self.play_sound()
 
 def main():
-    wake_up_time = input("When do you want to wake up? HH:MM:SS ")
+    wake_up_time = input("When do you want to wake up? HH:MM ")
     wake_up_time = wake_up_time.split(":")
+    wake_up_hour = int(wake_up_time[0])
+    wake_up_minute = int(wake_up_time[1])
+
+    current_time = datetime.datetime.now()
+
+    wake_up_dt = current_time.replace(
+        hour=wake_up_hour,
+        minute=wake_up_minute,
+        second=0,
+        microsecond=0
+    )
+    if (wake_up_dt < current_time):
+        wake_up_dt = wake_up_dt + datetime.timedelta(days=1)
+
+    print("Wake up time: " + str(wake_up_dt))
+
+    timer = Timer()
+    loop = asyncio.get_event_loop()
+    bt_connected = False
 
     while (True): #Alarm loop
-        time.sleep(3)
         current_time = datetime.datetime.now()
-        now = current_time.strftime("%H:%M:%S")
-        now = now.split(":")
-        if(int(wake_up_time[0]) == int(now[0]) and int(wake_up_time[1]) == int(now[1])):
+        sec_to_wake_up = (wake_up_dt - current_time).total_seconds()
+
+        if (not bt_connected and sec_to_wake_up < 15):
+            print("Connecting to sensor..")
+            loop.run_until_complete(timer.connect_sensor())
+            print("Connected")
+            bt_connected = True
+
+        if (sec_to_wake_up <= 0):
             print("Wake up")
-            timer = Timer()
-            loop = asyncio.get_event_loop()
             loop.run_until_complete(timer.start_loop())
             break
+
+        time.sleep(1)
             
     print("Good morning")
 
