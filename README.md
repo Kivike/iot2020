@@ -8,3 +8,6 @@ Python version 3.7
 ```
 pip install -r SmartAlarm/requirements.py
 ```
+
+### Android requirements
+Min SDK version 21 (Android 5.0 Lollipop)
