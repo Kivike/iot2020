@@ -7,6 +7,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.os.Handler
 import android.os.IBinder
 import android.util.Log
 import android.view.WindowManager
@@ -38,8 +39,15 @@ class SensingActivity : Activity(), SensorEventListener {
      */
     private val LIGHTS_CHANGE_THRESHOLD_LX = 20
 
+    /**
+     * How long to wait before sending lights off signal
+     * Used to prevent brief blocking of the sensor from turning on the alarm
+     */
+    private val LIGHTS_OFF_WAIT_MILLIS: Long = 3000
+
     private var lastIsLightsOn: Boolean = false
     private var lastLightValue: Int? = null
+    private var pendingOffSignal: Boolean = false
 
     private lateinit var valueText: TextView
     private lateinit var statusText: TextView
@@ -106,22 +114,37 @@ class SensingActivity : Activity(), SensorEventListener {
         var updateValue = false
 
         if ((!newIsLightsOn && lastIsLightsOn)) {
-            updateValue = true
-        } else if (newIsLightsOn && !lastIsLightsOn) {
-            val isChangeQuick = lightValue - lastLightValue!! > LIGHTS_CHANGE_THRESHOLD_LX
+            if (!pendingOffSignal) {
+                pendingOffSignal = true
 
-            if (isChangeQuick) {
-                updateValue = true
+                Handler().postDelayed({
+                    if (pendingOffSignal) {
+                        updateValue(newIsLightsOn)
+                    }
+                }, LIGHTS_OFF_WAIT_MILLIS)
             }
+        } else if (newIsLightsOn) {
+            if (!lastIsLightsOn) {
+                val isChangeQuick = lightValue - lastLightValue!! > LIGHTS_CHANGE_THRESHOLD_LX
+
+                if (isChangeQuick) {
+                    updateValue = true
+                }
+            }
+            pendingOffSignal = false
         }
 
         if (updateValue) {
-            lastIsLightsOn = newIsLightsOn
-            updateView(lastIsLightsOn)
-            sendUpdatedValue(lastIsLightsOn)
+            updateValue(newIsLightsOn)
         }
 
         lastLightValue = lightValue
+    }
+
+    private fun updateValue(isLightsOn: Boolean) {
+        lastIsLightsOn = isLightsOn
+        updateView(isLightsOn)
+        sendUpdatedValue(isLightsOn)
     }
 
     /**

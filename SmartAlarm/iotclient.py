@@ -25,9 +25,6 @@ class BleClient():
         self.notify_started = False
 
     def notification_handler(self, handle, data):
-        """Simple notification handler which prints the data received."""
-        print("{0}: {1}".format(handle, data))
-
         if (handle == self.light_status_handle):
             if (data == self.BYTES_LIGHTS_OFF):
                 self.callback(False)
@@ -36,23 +33,26 @@ class BleClient():
             else:
                 raise("Invalid notification value")
 
-    async def run(self, loop):
+    async def connect(self, loop):
         '''
-        Connect to BLE server and start receiving notifications
+        Connect to BLE server (light sensor)
         '''
-        self.running = True
         device = await self.select_server_device()
-
         print("Using device %s" % device.address)
 
         self.client = BleakClient(device.address, loop=loop)
-        print("Client created, connecting")
 
         connected = await self.client.connect()
 
-        print("Connection status: ", connected)
-
         self.light_status_handle = await self.get_light_status_handle()
+
+        return connected
+
+    async def run(self, loop):
+        '''
+        Start receiving notifications from BLE server
+        '''
+        self.running = True
 
         await self.client.start_notify(self.LIGHTS_STATUS_UUID, self.notification_handler)
         print("Notify started")
@@ -63,7 +63,6 @@ class BleClient():
         Get light status handle which is the only ID available in notification_handler
         '''
         svcs = await self.client.get_services()
-        print("Services:", svcs)
 
         for service in svcs:
             for char in service.characteristics:
@@ -78,7 +77,6 @@ class BleClient():
                 self.notify_started = False
 
             await self.client.disconnect()
-            print("BLE disconnected")
 
         self.running = False
 
